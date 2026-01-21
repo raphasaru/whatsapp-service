@@ -1,0 +1,38 @@
+services:
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
+    ports:
+      - "3000:3000"
+    environment:
+      - WAHA_WEBHOOK_URL=http://app:4000/webhook
+      - WAHA_WEBHOOK_EVENTS=message
+      - WAHA_DEFAULT_SESSION=default
+    volumes:
+      - waha-data:/app/.waha
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/sessions"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  app:
+    build: .
+    container_name: whatsapp-service
+    ports:
+      - "4000:4000"
+    environment:
+      - SUPABASE_URL=https://vonfsyszaxtbxeowelqu.supabase.co
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - WAHA_API_URL=http://waha:3000
+      - WAHA_SESSION=default
+      - PORT=4000
+    depends_on:
+      waha:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  waha-data:
