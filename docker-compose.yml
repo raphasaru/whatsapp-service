@@ -8,6 +8,7 @@ services:
       - WAHA_WEBHOOK_URL=http://app:4000/webhook
       - WAHA_WEBHOOK_EVENTS=message
       - WAHA_DEFAULT_SESSION=default
+      - WAHA_AUTHENTICATION_ENABLED=false
     volumes:
       - waha-data:/app/.waha
     restart: unless-stopped
