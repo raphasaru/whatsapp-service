@@ -7,22 +7,40 @@ services:
     environment:
       - WAHA_WEBHOOK_URL=http://app:4000/webhook
       - WAHA_WEBHOOK_EVENTS=message
+      - WAHA_DEFAULT_SESSION=default
     volumes:
       - waha-data:/app/.waha
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/sessions"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   app:
-    build: .
+    image: node:20-alpine
     container_name: whatsapp-service
+    working_dir: /app
     ports:
       - "4000:4000"
-    env_file:
-      - .env
     environment:
+      - SUPABASE_URL=https://vonfsyszaxtbxeowelqu.supabase.co
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - WAHA_API_URL=http://waha:3000
+      - WAHA_SESSION=default
+      - PORT=4000
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev"
     depends_on:
-      - waha
+      waha:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   waha-data:
+  node_modules:
