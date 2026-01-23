@@ -3,3 +3,19 @@ dist/
 .env
 *.log
 DEPLOY-VPS.md
+
+# N8N workflow files (contain API keys)
+*.workflow.json
+workflow-*.json
+n8n-*.json
+*Meu Bolso*.json
+tstt.json
+
+# IDE
+*.code-workspace
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

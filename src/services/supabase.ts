@@ -8,6 +8,9 @@ export interface WhatsAppLink {
   id: string;
   user_id: string;
   phone_number: string;
+  whatsapp_lid: string | null;
+  verification_code: string | null;
+  verification_expires_at: string | null;
   verified_at: string | null;
   created_at: string;
 }
@@ -79,4 +82,65 @@ export async function markPhoneVerified(phoneNumber: string): Promise<void> {
   if (error) {
     console.error("Error marking phone as verified:", error);
   }
+}
+
+/**
+ * Look up user by WhatsApp LID (Linked ID)
+ */
+export async function getUserByLid(lid: string): Promise<WhatsAppLink | null> {
+  const { data, error } = await supabase
+    .from("user_whatsapp_links")
+    .select("*")
+    .eq("whatsapp_lid", lid)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching user by LID:", error);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Find user by verification code and link their LID
+ */
+export async function verifyAndLinkLid(
+  verificationCode: string,
+  lid: string
+): Promise<WhatsAppLink | null> {
+  // Find user with this verification code that hasn't expired
+  const { data, error } = await supabase
+    .from("user_whatsapp_links")
+    .select("*")
+    .eq("verification_code", verificationCode.toUpperCase())
+    .gt("verification_expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error finding verification code:", error);
+    return null;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  // Link the LID to this user and clear verification code
+  const { error: updateError } = await supabase
+    .from("user_whatsapp_links")
+    .update({
+      whatsapp_lid: lid,
+      verification_code: null,
+      verification_expires_at: null,
+      verified_at: new Date().toISOString(),
+    })
+    .eq("id", data.id);
+
+  if (updateError) {
+    console.error("Error linking LID:", updateError);
+    return null;
+  }
+
+  return { ...data, whatsapp_lid: lid, verified_at: new Date().toISOString() };
 }
