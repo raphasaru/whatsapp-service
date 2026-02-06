@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { CONFIG } from "../config.js";
+import { encryptTransactionFields } from "../utils/crypto.js";
 
 // Using service role key to bypass RLS
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_SERVICE_KEY);
@@ -66,7 +67,12 @@ export async function getUserByPhone(
 export async function createTransaction(
   transaction: TransactionInsert
 ): Promise<void> {
-  const { error } = await supabase.from("transactions").insert(transaction);
+  const encrypted = encryptTransactionFields(
+    transaction as unknown as Record<string, unknown>,
+    CONFIG.ENCRYPTION_KEY
+  );
+
+  const { error } = await supabase.from("transactions").insert(encrypted);
 
   if (error) {
     throw new Error(`Failed to create transaction: ${error.message}`);
@@ -143,4 +149,77 @@ export async function verifyAndLinkLid(
   }
 
   return { ...data, whatsapp_lid: lid, verified_at: new Date().toISOString() };
+}
+
+// Subscription and WhatsApp limits
+export interface WhatsAppLimitResult {
+  success: boolean;
+  messages_used: number;
+  messages_limit: number;
+}
+
+const FREE_WHATSAPP_LIMIT = 30;
+
+/**
+ * Check and increment WhatsApp message count for a user.
+ * Returns whether the user can send a message and their current usage.
+ */
+export async function checkAndIncrementWhatsAppLimit(
+  userId: string
+): Promise<WhatsAppLimitResult> {
+  // Use the database function to increment and check limit
+  const { data, error } = await supabase.rpc("increment_whatsapp_message", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error("Error checking WhatsApp limit:", error);
+    // Fail open - allow the message on error
+    return {
+      success: true,
+      messages_used: 0,
+      messages_limit: FREE_WHATSAPP_LIMIT,
+    };
+  }
+
+  const result = data?.[0];
+  if (!result) {
+    return {
+      success: true,
+      messages_used: 0,
+      messages_limit: FREE_WHATSAPP_LIMIT,
+    };
+  }
+
+  return {
+    success: result.success,
+    messages_used: result.messages_used,
+    messages_limit: result.messages_limit,
+  };
+}
+
+/**
+ * Get current WhatsApp usage for a user without incrementing.
+ */
+export async function getWhatsAppUsage(
+  userId: string
+): Promise<{ messages_used: number; messages_limit: number }> {
+  const { data, error } = await supabase.rpc("reset_whatsapp_messages_if_needed", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error("Error getting WhatsApp usage:", error);
+    return { messages_used: 0, messages_limit: FREE_WHATSAPP_LIMIT };
+  }
+
+  const result = data?.[0];
+  if (!result) {
+    return { messages_used: 0, messages_limit: FREE_WHATSAPP_LIMIT };
+  }
+
+  return {
+    messages_used: result.messages_used,
+    messages_limit: result.messages_limit,
+  };
 }

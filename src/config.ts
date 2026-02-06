@@ -23,4 +23,7 @@ export const CONFIG = {
   // WAHA
   WAHA_API_URL: process.env.WAHA_API_URL || "http://waha:3000",
   WAHA_SESSION: process.env.WAHA_SESSION || "default",
+
+  // Encryption
+  ENCRYPTION_KEY: requireEnv("ENCRYPTION_KEY"),
 } as const;

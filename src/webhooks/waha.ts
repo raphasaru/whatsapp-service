@@ -4,6 +4,7 @@ import {
   getUserByLid,
   verifyAndLinkLid,
   createTransaction,
+  checkAndIncrementWhatsAppLimit,
   WhatsAppLink,
 } from "../services/supabase.js";
 import { sendMessage, downloadMedia } from "../services/waha.js";
@@ -63,12 +64,18 @@ async function handleVerification(
   return user;
 }
 
+interface UsageInfo {
+  messages_used: number;
+  messages_limit: number;
+}
+
 async function processTransaction(
   user: WhatsAppLink,
   from: string,
   content: string | null,
   mediaBuffer: Buffer | null,
-  mimeType: string | null
+  mimeType: string | null,
+  usage: UsageInfo
 ): Promise<void> {
   // Extract transactions using Gemini
   const result = await extractTransactions(content, mediaBuffer, mimeType);
@@ -83,7 +90,8 @@ async function processTransaction(
 
   // Create transactions in Supabase
   const created: string[] = [];
-  const today = new Date().toISOString().split("T")[0];
+  // Use Brasília timezone (UTC-3) to get correct local date
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   for (const tx of result.transactions) {
     try {
@@ -107,10 +115,23 @@ async function processTransaction(
 
   // Send confirmation
   if (created.length > 0) {
-    const confirmationMessage =
+    let confirmationMessage =
       created.length === 1
         ? `✅ Transação registrada!\n\n${created[0]}`
         : `✅ ${created.length} transações registradas!\n\n${created.join("\n")}`;
+
+    // Add warning if approaching limit (80% or more)
+    const isUnlimited = usage.messages_limit > 100;
+    const usagePercentage = usage.messages_used / usage.messages_limit;
+
+    if (!isUnlimited && usagePercentage >= 0.8) {
+      const remaining = usage.messages_limit - usage.messages_used;
+      confirmationMessage += `\n\n⚠️ Você tem apenas ${remaining} mensagem${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''} este mês.`;
+
+      if (remaining <= 5) {
+        confirmationMessage += `\nFaça upgrade para Pro: fin.prizely.com.br/pricing`;
+      }
+    }
 
     await sendMessage(from, confirmationMessage);
   }
@@ -186,6 +207,26 @@ export async function handleWahaWebhook(req: Request, res: Response) {
     // User found - process the message
     console.log(`User found: ${user.user_id}`);
 
+    // Check WhatsApp message limit before processing
+    const limitResult = await checkAndIncrementWhatsAppLimit(user.user_id);
+
+    if (!limitResult.success) {
+      console.log(`User ${user.user_id} has reached WhatsApp limit: ${limitResult.messages_used}/${limitResult.messages_limit}`);
+
+      await sendMessage(
+        from,
+        `Você atingiu o limite de ${limitResult.messages_limit} mensagens pelo WhatsApp este mês.
+
+Para continuar usando o WhatsApp sem limites, faça upgrade para o plano Pro:
+👉 https://fin.prizely.com.br/pricing
+
+Seu limite será renovado no primeiro dia do próximo mês.`
+      );
+      return res.status(200).json({ ok: true, message: "Limit reached" });
+    }
+
+    console.log(`User ${user.user_id} WhatsApp usage: ${limitResult.messages_used}/${limitResult.messages_limit}`);
+
     let content: string | null = null;
     let mediaBuffer: Buffer | null = null;
     let mimeType: string | null = null;
@@ -212,7 +253,10 @@ export async function handleWahaWebhook(req: Request, res: Response) {
       return res.status(200).json({ ok: true });
     }
 
-    await processTransaction(user, from, content, mediaBuffer, mimeType);
+    await processTransaction(user, from, content, mediaBuffer, mimeType, {
+      messages_used: limitResult.messages_used,
+      messages_limit: limitResult.messages_limit,
+    });
 
     return res.status(200).json({ ok: true, processed: true });
   } catch (error) {
