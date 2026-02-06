@@ -180,7 +180,7 @@ export async function handleWahaWebhook(req: Request, res: Response) {
         } else {
           await sendMessage(
             from,
-            "❌ Código de verificação inválido ou expirado.\n\nAcesse o app Meu Bolso em Configurações > WhatsApp para gerar um novo código."
+            "❌ Código de verificação inválido ou expirado.\n\nAcesse o app KYN App em Configurações > WhatsApp para gerar um novo código."
           );
           return res.status(200).json({ ok: true, message: "Invalid verification code" });
         }
@@ -189,7 +189,7 @@ export async function handleWahaWebhook(req: Request, res: Response) {
       // Not a verification code and user not found
       await sendMessage(
         from,
-        "👋 Olá! Para usar o Meu Bolso via WhatsApp, primeiro você precisa vincular seu número.\n\n1. Acesse o app Meu Bolso\n2. Vá em Configurações > WhatsApp\n3. Gere um código de verificação\n4. Envie o código aqui\n\nSe já tem um código, envie ele agora!"
+        "👋 Olá! Para usar o KYN App via WhatsApp, primeiro você precisa vincular seu número.\n\n1. Acesse o app KYN App\n2. Vá em Configurações > WhatsApp\n3. Gere um código de verificação\n4. Envie o código aqui\n\nSe já tem um código, envie ele agora!"
       );
       return res.status(200).json({ ok: true, message: "User not registered" });
     }
@@ -199,7 +199,7 @@ export async function handleWahaWebhook(req: Request, res: Response) {
       console.log(`User not found for LID: ${lid}`);
       await sendMessage(
         from,
-        "👋 Para usar o Meu Bolso via WhatsApp, vincule seu número primeiro.\n\nAcesse o app > Configurações > WhatsApp e envie o código de verificação aqui."
+        "👋 Para usar o KYN App via WhatsApp, vincule seu número primeiro.\n\nAcesse o app > Configurações > WhatsApp e envie o código de verificação aqui."
       );
       return res.status(200).json({ ok: true, message: "User not registered" });
     }

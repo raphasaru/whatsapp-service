@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**WhatsApp Service** - This repository contains code for WhatsApp integration with the Meu Bolso financial app. **Note: The actual automation is currently handled by n8n workflows, not this Node.js service.** This service code exists but may not be actively deployed.
+**WhatsApp Service** - This repository contains code for WhatsApp integration with the KYN App financial app. **Note: The actual automation is currently handled by n8n workflows, not this Node.js service.** This service code exists but may not be actively deployed.
 
 ## Current Architecture: n8n vs whatsapp-service
 
 ### n8n (Currently Active)
 
-The WhatsApp automation is **currently running via n8n workflows**. The workflow file `Meu Bolso - WhatsApp com Audio e Imagem (Corrigido).json` contains the active automation.
+The WhatsApp automation is **currently running via n8n workflows**. The workflow file `KYN App - WhatsApp com Audio e Imagem (Corrigido).json` contains the active automation.
 
 **What n8n does:**
 1. Receives webhooks from WAHA via `@devlikeapro/n8n-nodes-waha.wahaTrigger`
@@ -315,9 +315,9 @@ services:
 4. Session persists in `waha-data` volume
 5. Configure n8n workflow to receive webhooks from WAHA
 
-## Integration with Meu Bolso
+## Integration with KYN App
 
-Both systems share the Supabase database with the main Meu Bolso app:
+Both systems share the Supabase database with the main KYN App app:
 
 - Uses same tables: `transactions`, `user_whatsapp_links`, `subscriptions`
 - Uses `service_role` key (whatsapp-service) or `anon` key (n8n) to bypass RLS
@@ -325,7 +325,7 @@ Both systems share the Supabase database with the main Meu Bolso app:
 
 ### User Links Their WhatsApp
 
-1. In Meu Bolso web app: Settings > WhatsApp
+1. In KYN App web app: Settings > WhatsApp
 2. Enter phone number → generates verification code
 3. Send code via WhatsApp to the bot
 4. This service validates and links the account
@@ -333,7 +333,7 @@ Both systems share the Supabase database with the main Meu Bolso app:
 ## Error Handling
 
 **n8n:**
-- Unknown user: "Você não está cadastrado no Meu Bolso..."
+- Unknown user: "Você não está cadastrado no KYN App..."
 - IA didn't understand: "Não entendi. Tente: gastei 50 no mercado..."
 - All errors logged in n8n execution logs
 
@@ -361,5 +361,5 @@ curl http://localhost:3000/api/sessions/default
 
 ## Related Projects
 
-- `meu-bolso/` - Main Next.js web application (see its own CLAUDE.md)
-- **n8n workflow**: `Meu Bolso - WhatsApp com Audio e Imagem (Corrigido).json` - Active automation
+- `kyn-app/` - Main Next.js web application (see its own CLAUDE.md)
+- **n8n workflow**: `KYN App - WhatsApp com Audio e Imagem (Corrigido).json` - Active automation

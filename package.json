@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-service",
   "version": "1.0.0",
-  "description": "WhatsApp integration service for Meu Bolso",
+  "description": "WhatsApp integration service for KYN App",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

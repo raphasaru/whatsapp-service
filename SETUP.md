@@ -1,6 +1,6 @@
 # Guia de Configuração - WhatsApp Service
 
-Este guia explica como configurar e fazer o deploy da integração WhatsApp para o **Meu Bolso**.
+Este guia explica como configurar e fazer o deploy da integração WhatsApp para o **KYN App**.
 
 ## 📋 Pré-requisitos
 
@@ -189,7 +189,7 @@ server {
 
 ## 👤 7. Vincular Usuário no App
 
-1. O usuário acessa o **Meu Bolso** web
+1. O usuário acessa o **KYN App** web
 2. Vai em **Configurações > WhatsApp**
 3. Digita o número de celular e clica em "Vincular"
 4. Pronto! Já pode enviar mensagens para o WhatsApp conectado
